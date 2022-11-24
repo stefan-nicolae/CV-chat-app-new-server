@@ -1,7 +1,7 @@
 const WebSocket = require('ws')
 var http = require('http');
 
-const port = process.env.PORT || 8082
+const port = 8082
 const wss = new WebSocket.Server({port: port})
 const sockets = {}
 const pairs = {}
