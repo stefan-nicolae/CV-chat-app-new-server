@@ -1,4 +1,6 @@
 const WebSocket = require('ws')
+var http = require('http');
+
 const port = process.env.PORT || 8082
 const wss = new WebSocket.Server({port: port})
 const sockets = {}
@@ -91,3 +93,8 @@ wss.on("connection", socket => {
    })
 }) 
 
+
+http.createServer(function (req, res) {
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Hello World!');
+}).listen(8080); 
