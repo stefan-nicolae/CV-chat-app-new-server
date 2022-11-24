@@ -1,5 +1,4 @@
 const WebSocket = require('ws')
-
 const port = process.env.PORT || 8082
 const wss = new WebSocket.Server({port: port})
 const sockets = {}
