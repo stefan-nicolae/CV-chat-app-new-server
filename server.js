@@ -1,5 +1,4 @@
 const WebSocket = require('ws')
-
 const port = process.env.PORT || 8082
 const wss = new WebSocket.Server({port: port})
 const sockets = {}
@@ -12,7 +11,6 @@ function randomNumber(min, max) {
 
 wss.on("connection", socket => {
     const socketID = randomNumber(100000, 999999)
-    console.log(socketID + " connected")
     const interval = setInterval(() => {        
         socket.send(JSON.stringify(
             {
@@ -25,7 +23,6 @@ wss.on("connection", socket => {
     
     socket.on("message", data => {
         const parsedData = JSON.parse(`${data}`)
-        console.log(parsedData)
 
         if(parsedData.chatID && parsedData.msgType === "forceAdd") { 
             if(!pairs[parsedData.chatID]) pairs[parsedData.chatID] = []
@@ -36,10 +33,8 @@ wss.on("connection", socket => {
                 }
             }
             if(pairs[parsedData.chatID].length === 2) {
-                //force add each other
                 let index = 0
                 pairs[parsedData.chatID].forEach(user => {
-                    console.log("userToSendTo: ", user)
                     sockets[user].send(JSON.stringify(
                         usersInPairs[pairs[parsedData.chatID][index ? 0 : 1 ]]
                     ))
@@ -58,8 +53,6 @@ wss.on("connection", socket => {
     })
 
     socket.on("close", () => {
-        console.log("client closed")
-
         if(usersInPairs[socketID]) {
             if(pairs[usersInPairs[socketID].chatID].length === 1) {
                 delete pairs[usersInPairs[socketID].chatID]  
@@ -74,11 +67,8 @@ wss.on("connection", socket => {
                     }
                     index++
                 })
-                
-
             }
         }
-
 
         delete sockets[socketID] 
         Object.keys(sockets).forEach(key => {
@@ -88,7 +78,6 @@ wss.on("connection", socket => {
                 "ID": socketID
             }))
         })
-
    })
 }) 
 
