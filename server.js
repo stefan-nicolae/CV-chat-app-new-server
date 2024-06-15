@@ -26,7 +26,7 @@ wss.on("connection", socket => {
 
         if(parsedData.chatID && parsedData.msgType === "forceAdd") { 
             if(!pairs[parsedData.chatID]) pairs[parsedData.chatID] = []
-            if(pairs[parsedData.chatID].length !== 2) { 
+            if(pairs[parsedData.chatID].length < 2) { 
                 if(!pairs[parsedData.chatID].includes(parsedData.senderID)) {
                     pairs[parsedData.chatID].push(parsedData.senderID)
                     usersInPairs[parsedData.senderID] = parsedData
