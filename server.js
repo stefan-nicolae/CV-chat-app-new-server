@@ -2,14 +2,30 @@ const WebSocket = require('ws')
 const port = process.env.PORT || 8082
 const wss = new WebSocket.Server({port: port})
 const sockets = {}
-const pairs = {}
-const usersInPairs = {}
+const pairs = []
 
 function randomNumber(min, max) { 
     return Math.floor(Math.random() * (max - min) + min)
 } 
 
+
+const cleanupPairs = (socketID) => {
+
+
+    if(sockets[socketID].chatID) {
+        pairs[sockets[socketID].chatID].forEach((item, index) => {
+            if(item[0] === socketID) {
+                if(pairs[sockets[socketID].chatID].length === 3)
+                    pairs[sockets[socketID].chatID] = [pairs[sockets[socketID].chatID][index ? 0 : 1]]
+                else pairs[sockets[socketID].chatID] = undefined
+            }
+        })
+    }
+
+}
+
 wss.on("connection", socket => {
+
     const socketID = randomNumber(100000, 999999)
     const interval = setInterval(() => {        
         socket.send(JSON.stringify(
@@ -24,23 +40,31 @@ wss.on("connection", socket => {
     socket.on("message", data => {
         const parsedData = JSON.parse(`${data}`)
 
-        if(parsedData.chatID && parsedData.msgType === "forceAdd") { 
-            if(!pairs[parsedData.chatID]) pairs[parsedData.chatID] = []
-            if(pairs[parsedData.chatID].length < 2) { 
-                if(!pairs[parsedData.chatID].includes(parsedData.senderID)) {
-                    pairs[parsedData.chatID].push(parsedData.senderID)
-                    usersInPairs[parsedData.senderID] = parsedData
-                }
-            }
-            if(pairs[parsedData.chatID].length === 2) {
-                let index = 0
-                pairs[parsedData.chatID].forEach(user => {
-                    sockets[user].send(JSON.stringify(
-                        usersInPairs[pairs[parsedData.chatID][index ? 0 : 1 ]]
+        console.log(parsedData)
+
+        if(parsedData.msgType==="removePeer") {
+
+            cleanupPairs(parsedData.peerID)
+    
+        }
+        
+        if(parsedData.chatID && parsedData.msgType === "forceAdd") {
+            console.log("THIS RAN")
+            const chatID = parsedData.chatID
+            sockets[parsedData.senderID].chatID = chatID
+            if(pairs[chatID] === undefined) pairs[chatID] = []
+            if(pairs[chatID].length < 2) pairs[chatID].push([parsedData.senderID, parsedData])
+            if(pairs[chatID].length === 2) {
+                
+                pairs[chatID].forEach((item, index) => {
+                    sockets[item[0]].send(JSON.stringify(
+                        pairs[chatID][index ? 0 : 1][1]
                     ))
-                    index++
                 })
-            }
+                
+                pairs[chatID].push(true)
+            }   
+            console.log(pairs)
         }
 
         if(parsedData.msgType === "MYID_RECEIVED" && parsedData.senderID === socketID) {
@@ -53,22 +77,10 @@ wss.on("connection", socket => {
     })
 
     socket.on("close", () => {
-        if(usersInPairs[socketID]) {
-            if(pairs[usersInPairs[socketID].chatID].length === 1) {
-                delete pairs[usersInPairs[socketID].chatID]  
-                delete usersInPairs[socketID]
-            } 
-            else if(usersInPairs[socketID] && pairs[usersInPairs[socketID].chatID].includes(socketID)) {
-                let index = 0 
-                pairs[usersInPairs[socketID].chatID].forEach((user) => {
-                    if(user === socketID) {
-                        pairs[usersInPairs[socketID].chatID].splice(index, 1)
-                        return
-                    }
-                    index++
-                })
-            }
-        }
+        console.log(socketID + "disconnected")
+
+        cleanupPairs(socketID)
+
 
         delete sockets[socketID] 
         Object.keys(sockets).forEach(key => {
